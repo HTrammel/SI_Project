@@ -2,22 +2,26 @@
 #
 library(ggplot2)
 
-r_exp <- rexp(1000,0.2)
-r_mn <- mean(r_exp)
-r_sd <- sd(r_exp)
+# CLT formulat for Exponential Distribution
+clt_func <- function(x, n) 5 * sqrt(n) * (mean(x) - 0.5)
 
-base_pl <- qplot(r_exp) +
-    stat_bin() +
-    geom_vline(xintercept = mean(r_exp), colour = "red")
+num_sim <- 1000
+num_samp <- 40
 
-print(base_pl)
+# CLT formulat for Exponential Distribution
+dat <- data.frame(
+    x = c(apply(matrix(sample(0:1, nosim * nosamp, replace = TRUE),
+                       nosim), 1, cfunc, nosamp
+                ),
+          apply(matrix(sample(nosim * nosamp, replace = TRUE),
+                       nosim), 1, rexp, c(nosamp, 0.2)
+                )
+          )
+    )
 
+g <- ggplot(dat, aes(x = x)) +
+    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
+    stat_function(fun = dexp)
 
-
-#p + annotate("rect", xmin = 3, xmax = 4.2, ymin = 12, ymax = 21, alpha = .2)
-
-# mns = NULL
-# for (i in 1:1000) mns <- c(mns, mean(runif(40)))
-# sd_mean <- sd(mns)
-
+print(g)
 
