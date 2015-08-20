@@ -105,7 +105,7 @@ and divide by $1.71 / \sqrt{n}$ and repeat this over and over
 ---
 ## Result of our die rolling experiment
 
-```{r, echo = FALSE, fig.width=9, fig.height = 6, fig.align='center'}
+```{r, echo = TRUE,  fig.width=9, fig.height = 6, fig.align='center'}
 nosim <- 1000
 cfunc <- function(x, n) sqrt(n) * (mean(x) - 3.5) / 1.71
 dat <- data.frame(
@@ -141,7 +141,7 @@ $2 \sqrt{n}$ (divide by $1/(2 \sqrt{n})$)
 
 ---
 ## Simulation results
-```{r, echo = FALSE, fig.width=9, fig.height = 6, fig.align='center'}
+```{r, echo = TRUE,  fig.width=9, fig.height = 6, fig.align='center'}
 nosim <- 1000
 cfunc <- function(x, n) 2 * sqrt(n) * (mean(x) - 0.5) 
 dat <- data.frame(
@@ -160,7 +160,7 @@ g + facet_grid(. ~ size)
 
 ---
 ## Simulation results, $p = 0.9$
-```{r, echo = FALSE, fig.width=9, fig.height = 6, fig.align='center'}
+```{r, echo = TRUE,  fig.width=9, fig.height = 6, fig.align='center'}
 nosim <- 1000
 cfunc <- function(x, n) sqrt(n) * (mean(x) - 0.9) / sqrt(.1 * .9)
 dat <- data.frame(

@@ -7,6 +7,11 @@ output: html_document
 
 ```{r loadLibraries}
 library(ggplot2)
+library(MASS)
+
+theo_mean <- 1/0.2
+theo_sd <- 1/0.2
+theo_var <- theo_sd^2
 
 ```
 ### Overview
@@ -21,24 +26,87 @@ The theoretical mean was 1/lambda or 1/0.2 = 5.  The heoretical standard deviati
 The following code was used for this full simulation.
 
 ```{r basic_simulation}
-
 num_sim <- 1000
-r_exp <- rexp(1000,0.2)
-r_mn <- mean(r_exp)
-r_sd <- sd(r_exp)
-r_variance <- r_sd^2
+num_samp <- 40
 
 ```
 
-* The full simulation mean was `r r_mn`, which differed from the theoretical mean (5) by `r 5-r_mn`.
-* The full simulation standard deviation was `r r_sd`, which differed from the theoretical standard deviation (5) by `r 5-r_sd`.
-* The full simulation variance was `r r_variance`, which differed from the theoretical variance (25) by `r 25 - r_variance`.
+A sample of this generated data is depicted in the following graph. 
+
+```{r plot_sample}
+set.seed(4)
+samp <- data.frame(rexp(num_sim, 0.2))
+names(samp) <- "x"
+samp_fit <- fitdistr(samp$x, "exponential")
+samp_rate <- samp_fit$estimate[1]
+
+diff_rate <- round(abs(0.2 - samp_rate), 3)
+
+g1 <- ggplot(samp, aes(x = x)) +
+    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
+    ggtitle("Sample of Expoential Distribution") +
+    stat_function(fun = dexp,
+            args = list(rate = samp_rate),
+            size = 2)
+print(g1)
+```
+
+A best fit estimate of the sample's rate overlays the histogram.  The estimated rate for this sample was `r round(samp_rate, 3)` or `r round(abs(0.2 - samp_rate), 3)` difference from predetermined rate.
+
+The actual means of the data from the simulation were determined and were subsequently plotted.  
+
+```{r plot_simulation_means}
+set.seed(4)
+dat <- data.frame(replicate(num_sim, rexp(num_samp, 0.2)))
+mn_df <- data.frame(colMeans(dat))
+names(mn_df) <- "x"
+
+mn_fit <- fitdistr(mn_df$x, "normal")
+est_mean <- mn_fit$estimate[1]
+est_sd <- mn_fit$estimate[2]
+
+g2 <- ggplot(mn_df, aes(x)) +
+    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
+    geom_vline(stat = "vline", xintercept = theo_mean,
+               size = 2, color = "red", linetype = 1, show_guide = T) +
+    ggtitle("Plot of Means from Simulated Exponential Distribution") +
+    stat_function(fun = dnorm,
+                args = list(mean = est_mean, sd = est_sd),
+                size = 2)
+print(g2)
+
+```
+
+The graph suggested a normal distribution so a best fit estimate was made and this was plotted as an overlay. The estimated mean of this distribution was `r round(est_mean, 3)` or a `r round(abs(5 - est_mean), 3)` difference from the theoretical mean.  The estimated standard distribution of `r round(est_sd, 3)`, or a `r round(abs(0.5 - est_sd), 3)` difference from the theoretical standard deviation.
+
 
 The second simulation looked at the distribution of averages of 40 exponentials sampled from a thousand simulations. The following code was used for this sampled simulation.
 
 ```{r}
 
+# CLT formula for Exponential Distribution
+clt_func <- function(x, n) (mean(x) - 0.5 / (5 / sqrt(n)))
+set.seed(40)
+idx <- sample(1:nrow(mn_df), 40)
+clt_dat <- mn_df[idx,]
+clt_df = NULL
+for (i in clt_dat) clt_df <- rbind(clt_df, (clt_func(i,40)))
 
+clt_df <- data.frame(clt_df)
+names(clt_df) <- "x"
+
+
+clt_fit <- fitdistr(clt_df$x, "normal")
+
+g3 <- ggplot(clt_df, aes(x = x)) +
+    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
+    geom_vline(stat = "vline", xintercept = theo_mean,
+               size = 2, color = "red", linetype = 1, show_guide = T) +
+    ggtitle("Plot of 40 Sample Means from Simulated Exponential Distribution") +
+    stat_function(fun = dnorm,
+                  args = list(mean = clt_fit$estimate[1], sd = clt_fit$estimate[2]),
+                  size = 2)
+print(g3)
 ```
 
 ### Sample Mean versus Theoretical Mean

@@ -1,40 +1,32 @@
 library(ggplot2)
+library(MASS)
 
 num_sim <- 1000
 num_samp <- 40
 
-# CLT formulat for Exponential Distribution
-cfunc <- function(x, n) 5 * sqrt(n) * (mean(x) - 0.5)
+# generate the data
+dat <- data.frame(replicate(num_sim, rexp(num_samp, 0.2)))
+mn_df <- data.frame(colMeans(dat))
+names(mn_df) <- "x"
 
-# given lambda of 0.2
-theo_mean <- 1/.2
-theo_sd <- 1/.2
-theo_var <- (1/.2)^2
+# CLT formula for Exponential Distribution
+clt_func <- function(x, n) (mean(x) - 0.5 / (5 / sqrt(n)))
 
-for (i in 1 : 1000) {
-    r_exp <- cbind(r_exp, i, rexp(num_samp,0.2), cfunc(r_exp[i,2], num_samp))
-}
+set.seed(40)
+idx <- sample(1:nrow(mn_df), 50)
+clt_dat <- mn_df[idx,]
 
+clt_df = NULL
+for (i in clt_dat) clt_df <- rbind(clt_df, (clt_func(i,50)))
 
-# g <- ggplot(r_exp, aes(x=x)) +
-#     geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
-#     stat_function(fun = dexp, size = 1, colour = "red")
-#
-# print(g)
+clt_df <- data.frame(clt_df)
+names(clt_df) <- "x"
 
-# nosim <- 1000
-# cfunc <- function(x, n) 2 * sqrt(n) * (mean(x) - 0.5)
-# dat <- data.frame(
-#     x = c(apply(matrix(sample(0:1, nosim * 10, replace = TRUE),
-#                        nosim), 1, cfunc, 10),
-#           apply(matrix(sample(0:1, nosim * 20, replace = TRUE),
-#                        nosim), 1, cfunc, 20),
-#           apply(matrix(sample(0:1, nosim * 30, replace = TRUE),
-#                        nosim), 1, cfunc, 30)
-#     ),
-#     size = factor(rep(c(10, 20, 30), rep(nosim, 3))))
-# g <- ggplot(dat, aes(x = x, fill = size)) + geom_histogram(binwidth=.3, colour = "black", aes(y = ..density..))
-# g <- g + stat_function(fun = dnorm, size = 2)
-# g + facet_grid(. ~ size)
-# print(g)
+clt_fit <- fitdistr(clt_df$x, "normal")
 
+g3 <- ggplot(clt_df, aes(x = x)) +
+    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
+    stat_function(fun = dnorm,
+                  args = list(mean = clt_fit$estimate[1], sd = clt_fit$estimate[2]),
+                  size = 2)
+print(g3)

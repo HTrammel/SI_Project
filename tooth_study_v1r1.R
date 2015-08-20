@@ -15,16 +15,34 @@ data("ToothGrowth")
 
 library(dplyr)
 library(ggplot2)
+library(knitr)
 
-# require(graphics)
-# coplot(len ~ dose | supp, data = ToothGrowth, panel = panel.smooth,
-#        xlab = "ToothGrowth data: length vs dose, given type of supplement")
+se <- function(x) sqrt(var(x)/length(x))
 
-tg <- ToothGrowth %>% group_by(supp, dose) %>% summarise_each(funs(mean, sd))
-print(tg)
+tg <- ToothGrowth %>%
+    group_by(supp, dose) %>%
+    summarise_each(funs(mean, sd, se)) %>%
+    rename(tg_mean = mean, tg_sd = sd, tg_se = se)
 
-tg_pl <- ggplot(ToothGrowth, aes(dose, len)) +
-    geom_dotplot() +
-    facet_grid(. ~ supp)
+kable(summary(tg))
 
-print(tg_pl)
+
+pl1 <- ggplot(ToothGrowth, aes(factor(dose), y=len, fill = supp)) +
+    geom_boxplot(stat="boxplot", outlier.colour = "blue", notch = FALSE) +
+    ggtitle("ToothGrowth data: length vs dose, given type of supplement")
+print(pl1)
+
+
+pl2 <- ggplot(ToothGrowth, aes(factor(dose), y=len, fill = supp)) +
+    geom_violin(stat="ydensity", position = "dodge") +
+    ggtitle("ToothGrowth data: length vs dose, given type of supplement")
+print(pl2)
+
+
+tg_limits <- aes(ymax = tg_mean + tg_se, ymin = tg_mean - tg_se)
+pl3 <- ggplot(tg, aes(dose, tg_mean)) +
+    geom_point(stat="identity", colour="red", size=3) +
+    geom_errorbar( tg_limits, width = 0.1) +
+    ggtitle("ToothGrowth data: length vs dose, given type of supplement") +
+    facet_grid(.~supp)
+print(pl3)
