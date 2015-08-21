@@ -1,32 +1,35 @@
+# course project
+#
 library(ggplot2)
+library(dplyr)
 library(MASS)
 
 num_sim <- 1000
 num_samp <- 40
 
-# generate the data
+lambda <- 0.2
+theo_mean <- 1/lambda
+theo_sd <- 1/lambda
+theo_var <- theo_sd^2
+
+set.seed(4)
 dat <- data.frame(replicate(num_sim, rexp(num_samp, 0.2)))
-mn_df <- data.frame(colMeans(dat))
-names(mn_df) <- "x"
+pop_df <- data.frame(pop_mean = c(apply(dat, 2, mean)), pop_sd = c(apply(dat, 2, sd)))
+d_mean <- mean(pop_df$pop_mean)
+d_sd <- sd(pop_df$pop_mean)
 
-# CLT formula for Exponential Distribution
-clt_func <- function(x, n) (mean(x) - 0.5 / (5 / sqrt(n)))
+g2 <- ggplot(pop_df, aes(x = pop_mean)) +
+        geom_histogram(alpha = .20, binwidth=.05, colour = "black", aes(y = ..density..)) +
+        ggtitle("Plot of Means from One Thousand Exponential Distributions")  +
+        stat_function(fun = dnorm, colour = "blue", size = 2, linetype = 1,
+                args = list(mean = d_mean, sd = d_sd)) +
+        annotate("text", x = d_mean+1.5, y=.3,
+                label="Population Mean Distribution",
+                colour="blue") +
+        geom_vline(stat = "vline", xintercept = d_mean,
+                   size = 2, color = "blue", linetype = 2) +
+        annotate("text", x = d_mean+.65, y=0.57,
+                 label=paste("Population Mean =", round(d_mean,3)),
+                 colour="blue")
+print(g2)
 
-set.seed(40)
-idx <- sample(1:nrow(mn_df), 50)
-clt_dat <- mn_df[idx,]
-
-clt_df = NULL
-for (i in clt_dat) clt_df <- rbind(clt_df, (clt_func(i,50)))
-
-clt_df <- data.frame(clt_df)
-names(clt_df) <- "x"
-
-clt_fit <- fitdistr(clt_df$x, "normal")
-
-g3 <- ggplot(clt_df, aes(x = x)) +
-    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
-    stat_function(fun = dnorm,
-                  args = list(mean = clt_fit$estimate[1], sd = clt_fit$estimate[2]),
-                  size = 2)
-print(g3)

@@ -57,3 +57,7 @@ Some criteria that you will be evaluated on
 * Did the student perform some relevant confidence intervals and/or tests?
 * Were the results of the tests and/or intervals interpreted in the context of the problem correctly?
 * Did the student describe the assumptions needed for their conclusions?
+
+
+# Purpose for the Study 
+According to patched R Reference Manual entry for the Tooth Growth dataset, the citation for the original study from which this data was obtained is Crampton, E. W. (1947) The growth of the odontoblast of the incisor teeth as a criterion of vitamin C intake of the guinea pig. _The Journal of Nutrition_ 33(5): 491–504. [link] (http://jn.nutrition.org/content/33/5/491.full.pdf). In this paper, the authors state the purpose of the study to be the evaluation of odnotoblast growth as a bioassay for vitamin C levels.  The procedures used in the study preclude paired comparisons of the results.

@@ -20,7 +20,7 @@ library(knitr)
 se <- function(x) sqrt(var(x)/length(x))
 
 tg <- ToothGrowth %>%
-    group_by(supp, dose) %>%
+    group_by(dose, supp) %>%
     summarise_each(funs(mean, sd, se)) %>%
     rename(tg_mean = mean, tg_sd = sd, tg_se = se)
 
@@ -40,9 +40,9 @@ print(pl2)
 
 
 tg_limits <- aes(ymax = tg_mean + tg_se, ymin = tg_mean - tg_se)
-pl3 <- ggplot(tg, aes(dose, tg_mean)) +
-    geom_point(stat="identity", colour="red", size=3) +
+pl3 <- ggplot(tg, aes(supp, tg_mean, colour=dose)) +
+    geom_point(stat="identity", size=3) +
     geom_errorbar( tg_limits, width = 0.1) +
     ggtitle("ToothGrowth data: length vs dose, given type of supplement") +
-    facet_grid(.~supp)
+    facet_grid(.~dose)
 print(pl3)

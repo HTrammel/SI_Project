@@ -107,7 +107,7 @@ and divide by $1.71 / \sqrt{n}$ and repeat this over and over
 
 ```{r, echo = TRUE,  fig.width=9, fig.height = 6, fig.align='center'}
 nosim <- 1000
-cfunc <- function(x, n) sqrt(n) * (mean(x) - 3.5) / 1.71
+cfunc <- function(x, n) sqrt(n) * (mean(x) - 5) / 5
 dat <- data.frame(
   x = c(apply(matrix(sample(1 : 6, nosim * 10, replace = TRUE), 
                      nosim), 1, cfunc, 10),

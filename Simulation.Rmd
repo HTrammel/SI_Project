@@ -23,6 +23,12 @@ In order to make the needed comparisons, two sets of simulations were performed.
 
 The theoretical mean was 1/lambda or 1/0.2 = 5.  The heoretical standard deviation was also 1/lambda or 1/0.2 = 5.  This in turn yielded the theoretical variance of 25 (the theoretical standard deviation squared).
 
+```
+### Sample Mean versus Theoretical Mean
+1. Show the sample mean and compare it to the theoretical mean of the distribution.
+Include figures with titles. In the figures, highlight the means you are comparing. Include text that explains the figures and what is shown on them, and provides appropriate numbers.
+```
+
 The following code was used for this full simulation.
 
 ```{r basic_simulation}
@@ -108,10 +114,6 @@ g3 <- ggplot(clt_df, aes(x = x)) +
                   size = 2)
 print(g3)
 ```
-
-### Sample Mean versus Theoretical Mean
-1. Show the sample mean and compare it to the theoretical mean of the distribution.
-Include figures with titles. In the figures, highlight the means you are comparing. Include text that explains the figures and what is shown on them, and provides appropriate numbers.
 
 ### Sample Variance versus Theoretical Variance
 2. Show how variable the sample is (via variance) and compare it to the theoretical variance of the distribution.
