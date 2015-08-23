@@ -14,22 +14,31 @@ theo_var <- theo_sd^2
 
 set.seed(4)
 dat <- data.frame(replicate(num_sim, rexp(num_samp, 0.2)))
-pop_df <- data.frame(pop_mean = c(apply(dat, 2, mean)), pop_sd = c(apply(dat, 2, sd)))
-d_mean <- mean(pop_df$pop_mean)
-d_sd <- sd(pop_df$pop_mean)
+pop_df <- data.frame(
+    pop_mean = c(apply(dat, 2, mean)),
+    pop_sd = c(apply(dat, 2, sd)),
+    pop_var = c(apply(dat, 2, var))
+)
+samp_mean <- mean(pop_df$pop_mean)
+samp_sd <- sd(pop_df$pop_mean)
 
-g2 <- ggplot(pop_df, aes(x = pop_mean)) +
-        geom_histogram(alpha = .20, binwidth=.05, colour = "black", aes(y = ..density..)) +
-        ggtitle("Plot of Means from One Thousand Exponential Distributions")  +
-        stat_function(fun = dnorm, colour = "blue", size = 2, linetype = 1,
-                args = list(mean = d_mean, sd = d_sd)) +
-        annotate("text", x = d_mean+1.5, y=.3,
-                label="Population Mean Distribution",
-                colour="blue") +
-        geom_vline(stat = "vline", xintercept = d_mean,
-                   size = 2, color = "blue", linetype = 2) +
-        annotate("text", x = d_mean+.65, y=0.57,
-                 label=paste("Population Mean =", round(d_mean,3)),
-                 colour="blue")
-print(g2)
+set.seed(4)
+samp <- data.frame(rexp(num_sim, 0.2))
+names(samp) <- "x"
+samp_fit <- fitdistr(samp$x, "exponential")
+samp_rate <- samp_fit$estimate[1]
 
+g3 <- ggplot(NULL) +
+    geom_histogram(data=samp,
+                   alpha = .20,
+                   binwidth=.3,
+                   colour = "black",
+                   aes(x, y = ..density..)) +
+    geom_histogram(data=pop_df,
+                   alpha = .20,
+                   binwidth=.3,
+                   colour = "blue",
+                   aes(pop_mean, y = ..density..)) +
+    ggtitle("Expoential Distribution versus Distribution of Means")
+
+print(g3)

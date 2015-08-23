@@ -2,62 +2,207 @@
 title: "Tooth Growth.R"
 author: "Harold Trammel"
 date: "August 20, 2015"
-output: html_document
+output: pdf_document
 ---
-```{r lock_n_load}
-data("ToothGrowth")
+```{r global_options, include=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
 
+data("ToothGrowth")
 library(dplyr)
 library(ggplot2)
 library(knitr)
-library(printr)
 
 se <- function(x) sqrt(var(x)/length(x))
+fig <- 0
+tbl <- 0
+```
+
+```{r initialize_data}
+tg <- ToothGrowth %>%
+    group_by(supp, dose) %>%
+    summarise_each(funs(mean, sd, se)) %>%
+    rename(tg_mean = mean, tg_sd = sd, tg_se = se)
+
+tg_stats <- rbind(tg[4,], tg[1,], tg[5,], tg[2,], tg[6,], tg[3,])
+tg_stats <- rbind(tg[4,], tg[1,], tg[5,], tg[2,], tg[6,], tg[3,])
+names(tg_stats) <- c("Supplement","Dose","Mean","Standard Deviation","Standard Error")
+tg_stats$Supplement <- as.character(tg_stats$Supplement)
+
+for (i in c(1,3,5)) tg_stats[i,1] <-"Vitamin C"
+for (i in c(2,4,6)) tg_stats[i,1] <-"Orange Juice"
+```
+## Purpose for the Study 
+According to patched R Reference Manual entry for the Tooth Growth dataset, the citation for the original study from which this data was obtained is Crampton, E. W. (1947) The growth of the odontoblast of the incisor teeth as a criterion of vitamin C intake of the guinea pig. _The Journal of Nutrition_ 33(5): 491–504. [link] (http://jn.nutrition.org/content/33/5/491.full.pdf). 
+
+In this paper, the authors state that the purpose of the study was to evaluate the use of odontoblast growth as a bioassay for vitamin C levels.  The procedures used in the study preclude paired comparisons of the results. The data in this dataset compares the bioassay for vitamin C in orange juice and in an aqueous solution of pure vitamin C.  In reviewing the paper, I have inferred a secondary purpose, which is to prove the bioassay using odontoblasts was superior to the bioassay using weight gain.  Much of the statistical evidence presented in the paper compared the precision of the two bioassays.  Little statistical attention was given to the accuracy and precison within the odontoblast bioassay in regard to amounts determined.
+
+Based on the stated purpose, I would expect that the bioassay would accurately, consistently, and precisely indicate the amount of vitamin C in a given source.  The study data contains odontoblast lengths from six groups of ten guinea pigs. Three groups received an aqueous solution of vitamin C in three different doses.  The other three groups received orange juice in three diffent dosages. Since the authors of the study state that they had seen a dose-related response in the bioassay and that there was a range for which it was satisfactory, it seemed important to compare the results for the full range as well as for the individual doses.
+
+## Data Exploration
+The dataset provided was poorly documented.  The description that came with the dataset is confusing as it can be interpreted to say that each guinea received each of the three doses from both vitamin C sources.  From the paper, I determined that there were a total of sixty guinea pigs with each set of ten subject receiving only one dosing regimen.  Paired comparisons are not appopriate.  While the dataset is called __Tooth Growth__, the actual measures where changes in ondontobast length which are inside teeth.
+
+Figure `r fig+1` shows a box plot of the Tooth Growth data comparing changes in odontoblast length to the two different supplements received.  This graph indicates similar changes in length from both supplements but the vitamin C group had a wider interquartile range. 
+
+```{r plot_total}
+fig <- fig + 1
+pl0 <- ggplot(ToothGrowth, aes(factor(supp), y=len, fill = supp)) +
+    geom_boxplot(stat="boxplot", outlier.colour = "blue") +
+    ggtitle(paste("Figure", fig, "Odontobast Growth by Supplement Across All Doses")) +
+    xlab("Supplement Received") +
+    ylab("Changes in Odontoblast Length")
+print(pl0)
+```
+Figure `r fig+1` shows a box plot of the Tooth Growth data but graph compares the changes in length with both dose and supplement.  The results from the 2.0 mg dose are similar between the supplements.  This is not the case for the lower doses as the orange juice groups had more change in length.   This suggests that the dose-related response previously seen by the authors may be supported.
+
+```{r plot_dose}
+fig <- fig + 1
+pl1 <- ggplot(ToothGrowth, aes(factor(dose), y=len, fill = supp)) +
+    geom_boxplot(stat="boxplot", outlier.colour = "blue", notch = FALSE) +
+    ggtitle(paste("Figure", fig, "Odontobast Growth by Supplement and Dose")) +
+    xlab("Supplement Received") +
+    ylab("Changes in Odontoblast Length") 
+
+print(pl1)
+```
+
+Table `r tbl+1` shows the basis statistics for the dose specific data.  As might be expected from the graphs, the means at the 2.0 dose are 
+
+##### `r paste("Table", tbl+1, "Summary of Statistics")`
+
+```{r}
+tbl <- tbl + 1
+kable(tg_stats, format="markdown")
+```
+
+## Data Analysis
+
+I chose to have two null hypotheses since there are two different appoaches to using this reseach.
+
+My first null hypothesis (H~O~) is that there is no difference between the bioassay of orange juice and an aqueous solution of vitamin C across a 0.5 mg to 2.0 mg dosing range. 
+
+My first alternative hypothesis (H~A~) is that there is a difference between the bioassay of orange juice and an aqueous solution of vitamin C across a 0.5 mg to 2.0 mg dosing range. 
+
+My second null hypothesis (H~Oa~) is that there is no difference between the bioassay of orange juice and an aqueous solution of vitamin C at each of the three dosing regimens. 
+
+My second alternative hypothesis (H~Aa~) is that there is a difference between the bioassay of orange juice and an aqueous solution of vitamin C at each of the three dosing regimens. 
+
+
+
+### H~O~ versus H~A~
+Applying the Student's T-test to the odontoblast length versus the supplement given resulted in the following:
+
+```{r t_test_of_total}
+t_all <- t.test(ToothGrowth$len~ToothGrowth$supp, conf=0.95)
+
+print(t_all)
+```
+The H~0~ was accepted for the full dosage range.
+
+
+### H~0a~ versus H~Aa~
+Applying the Student's T-test to the odontoblast length versus the dose and supplement given resulted in the following:
+
+
+```{r dose_t_tests}
+vc05 <- ToothGrowth$len[ 1 : 10]
+vc1  <- ToothGrowth$len[11 : 20]
+vc2  <- ToothGrowth$len[21 : 30]
+oj05 <- ToothGrowth$len[31 : 40]
+oj1  <- ToothGrowth$len[41 : 50]
+oj2  <- ToothGrowth$len[51 : 60]
+
+d05_diff <- oj05 - vc05
+t05 <-  t.test(d05_diff)
+print(t05)
+```
+The H~0a~ hypothesis is rejected at the 0.5 mg dose.
+
+```{r dose_1}
+d1_diff <- oj1 - vc1
+t1 <-  t.test(d1_diff)
+print(t1)
+```
+The H~0a~ hypothesis is rejected at the 1.0 mg dose.
+
+```{r dose_2}
+d2_diff <- oj2 - vc2
+t2 <-  t.test(d2_diff)
+print(t2)
+```
+The H~0a~ hypothesis is accepted at the 2.0 mg dose.
+
+
+## Appendix
+
+### Setup
+```{r eval=FALSE, echo=TRUE}
+data("ToothGrowth")
+library(dplyr)
+library(ggplot2)
+library(knitr)
+
+se <- function(x) sqrt(var(x)/length(x))
+fig <- 0
+tbl <- 0
 
 tg <- ToothGrowth %>%
     group_by(supp, dose) %>%
     summarise_each(funs(mean, sd, se)) %>%
     rename(tg_mean = mean, tg_sd = sd, tg_se = se)
 
+tg_stats <- rbind(tg[4,], tg[1,], tg[5,], tg[2,], tg[6,], tg[3,])
+tg_stats <- rbind(tg[4,], tg[1,], tg[5,], tg[2,], tg[6,], tg[3,])
+names(tg_stats) <- c("Supplement","Dose","Mean","Standard Deviation","Standard Error")
+tg_stats$Supplement <- as.character(tg_stats$Supplement)
 
-pl1 <- ggplot(ToothGrowth, aes(factor(dose), y=len, fill = supp)) +
-    geom_boxplot(stat="boxplot", outlier.colour = "blue", notch = FALSE) +
-    ggtitle("ToothGrowth data: length vs dose, given type of supplement")
-print(pl1)
+for (i in c(1,3,5)) tg_stats[i,1] <-"Vitamin C"
+for (i in c(2,4,6)) tg_stats[i,1] <-"Orange Juice"
 
-
-pl2 <- ggplot(ToothGrowth, aes(factor(dose), y=len, fill = supp)) +
-    geom_violin(stat="ydensity", position = "dodge") +
-    ggtitle("ToothGrowth data: length vs dose, given type of supplement")
-print(pl2)
-
-
-tg_limits <- aes(ymax = tg_mean + tg_se, ymin = tg_mean - tg_se)
-pl3 <- ggplot(tg, aes(dose, tg_mean)) +
-    geom_point(stat="identity", colour="red", size=3) +
-    geom_errorbar( tg_limits, width = 0.1) +
-    ggtitle("ToothGrowth data: length vs dose, given type of supplement") +
-    facet_grid(.~supp)
-print(pl3)
-
+vc05 <- ToothGrowth$len[ 1 : 10]
+vc1  <- ToothGrowth$len[11 : 20]
+vc2  <- ToothGrowth$len[21 : 30]
+oj05 <- ToothGrowth$len[31 : 40]
+oj1  <- ToothGrowth$len[41 : 50]
+oj2  <- ToothGrowth$len[51 : 60]
 ```
 
+### Exploratory Data Analysis
 
-# Part Two
-Now in the second portion of the class, we're going to analyze the ToothGrowth data in the R datasets package.
+```{r eval=FALSE, echo=TRUE}
+fig <- fig + 1
+pl0 <- ggplot(ToothGrowth, aes(factor(supp), y=len, fill = supp)) +
+    geom_boxplot(stat="boxplot", outlier.colour = "blue") +
+    ggtitle(paste("Figure", fig, "Odontobast Growth by Supplement Across All Doses")) +
+    xlab("Supplement Received") +
+    ylab("Changes in Odontoblast Length")
+print(pl0)
 
-1. Load the ToothGrowth data and perform some basic exploratory data analyses
-2. Provide a basic summary of the data.
-3. Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there's other approaches worth considering)
-4. State your conclusions and the assumptions needed for your conclusions.
+fig <- fig + 1
+pl1 <- ggplot(ToothGrowth, aes(factor(dose), y=len, fill = supp)) +
+    geom_boxplot(stat="boxplot", outlier.colour = "blue", notch = FALSE) +
+    ggtitle(paste("Figure", fig, "Odontobast Growth by Supplement and Dose")) +
+    xlab("Supplement Received") +
+    ylab("Changes in Odontoblast Length") 
+```
 
-Some criteria that you will be evaluated on
+### Analysis
 
-* Did you  perform an exploratory data analysis of at least a single plot or table highlighting basic features of the data?
-* Did the student perform some relevant confidence intervals and/or tests?
-* Were the results of the tests and/or intervals interpreted in the context of the problem correctly?
-* Did the student describe the assumptions needed for their conclusions?
+```{r eval=FALSE, echo=TRUE}
+t_all <- t.test(ToothGrowth$len~ToothGrowth$supp, conf=0.95)
 
+print(t_all)
 
-# Purpose for the Study 
-According to patched R Reference Manual entry for the Tooth Growth dataset, the citation for the original study from which this data was obtained is Crampton, E. W. (1947) The growth of the odontoblast of the incisor teeth as a criterion of vitamin C intake of the guinea pig. _The Journal of Nutrition_ 33(5): 491–504. [link] (http://jn.nutrition.org/content/33/5/491.full.pdf). In this paper, the authors state the purpose of the study to be the evaluation of odnotoblast growth as a bioassay for vitamin C levels.  The procedures used in the study preclude paired comparisons of the results.
+d05_diff <- oj05 - vc05
+t05 <-  t.test(d05_diff)
+print(t05)
+
+d1_diff <- oj1 - vc1
+t1 <-  t.test(d1_diff)
+print(t1)
+
+d2_diff <- oj2 - vc2
+t2 <-  t.test(d2_diff)
+print(t2)
+
+```

@@ -1,138 +1,209 @@
 ---
-title: "A Comparison of Expoential Distribution in R and the Central Limit Theorem"
+title: "A Comparison of Exponential Distribution in R and the Central Limit Theorem"
 author: "Harold Trammel"
-date: "August 11, 2015"
-output: html_document
+date: "August 23, 2015"
+output: pdf_document
 ---
+```{r global_options, include=TRUE, echo=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=7, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+options(scipen=1, digits=2)
+fig <- 0
+tbl <- 0
 
-```{r loadLibraries}
 library(ggplot2)
 library(MASS)
-
-theo_mean <- 1/0.2
-theo_sd <- 1/0.2
-theo_var <- theo_sd^2
-
 ```
+
 ### Overview
 
 The purpose of this project is to nvestigate the exponential distribution in R and compare it with the Central Limit Theorem. The exponential distribution can be simulated in R with rexp(n, lambda) where lambda is the rate parameter. The mean of exponential distribution is 1/lambda and the standard deviation is also 1/lambda. Set lambda = 0.2 for all of the simulations. You will investigate the distribution of averages of 40 exponentials. Note that you will need to do a thousand simulations.  Illustrate via simulation and associated explanatory text the properties of the distribution of the mean of 40 exponentials.
 
-### Simulations
-In order to make the needed comparisons, two sets of simulations were performed.  The first set ran a thousand simulations of exponential distributions with a rate parameter or lambda of 0.2.  The mean and standard deviation for this collection of simulations were calculated and compared to the theoretical values for exponential distributions. 
+```{r simulate_data}
+theo_mean <- 1/0.2
+theo_sd <- 1/0.2
+theo_var <- theo_sd^2
 
-The theoretical mean was 1/lambda or 1/0.2 = 5.  The heoretical standard deviation was also 1/lambda or 1/0.2 = 5.  This in turn yielded the theoretical variance of 25 (the theoretical standard deviation squared).
-
-```
-### Sample Mean versus Theoretical Mean
-1. Show the sample mean and compare it to the theoretical mean of the distribution.
-Include figures with titles. In the figures, highlight the means you are comparing. Include text that explains the figures and what is shown on them, and provides appropriate numbers.
-```
-
-The following code was used for this full simulation.
-
-```{r basic_simulation}
 num_sim <- 1000
 num_samp <- 40
+set.seed(4)
+dat <- data.frame(replicate(num_sim, rexp(num_samp, 0.2)))
+pop_df <- data.frame(
+    pop_mean = c(apply(dat, 2, mean)),
+    pop_sd = c(apply(dat, 2, sd)),
+    pop_var = c(apply(dat, 2, var))
+    )
+samp_mean <- mean(pop_df$pop_mean)
+samp_sd <- sd(pop_df$pop_mean)
+samp_var <- mean(pop_df$pop_var)
+```
+### Simulations
+A set of one thousand simulations of forty expoential distributions was compiled.  The mean, standard deviation, and variance for each simulation was determined and stored for analysis.
 
+### Sample Mean versus Theoretical Mean
+The theoretical mean was 1/lambda or 1/0.2 = 5.  The theoretical standard deviation was also 1/lambda or 1/0.2 = 5.
+
+The combined sample mean was `r round(samp_mean, 3)` which differed from the theoretical mean by `r round(theo_mean - samp_mean, 3)`. The standard deviation was `r round(samp_sd, 3)`, or a `r round(abs(0.5 - samp_sd), 3)` difference from the theoretical standard deviation.
+
+Figure `r fig +1` shows the distribution of the sample means.  The graph suggests a normal distribution and a plot of a normal density based on the combined sample mean and standard deviation of the means was overlayed. The theoretical mean is shown as a red vertical line.  The sample mean is shown as a black dashed line.
+
+```{r plot_simulation_means}
+fig <- fig + 1
+g1 <- ggplot(pop_df, aes(x = pop_mean)) +
+        geom_histogram(alpha = .20, binwidth=.05, colour = "black", aes(y = ..density..)) +
+        ggtitle(paste("Figure ", fig,
+                      "Plot of Means from One Thousand Exponential Distributions"))  +
+        xlab("Means of Expoential Distributions") +
+        ylab("Density") +
+        geom_vline(stat = "vline", xintercept = theo_mean,
+            size = 2, color = "red", linetype = 1) +
+        annotate("text", x = theo_mean + 0.6, y = 0.6, colour="red",
+            label="Theoretical Mean = 5") +
+        geom_vline(stat = "vline", xintercept = samp_mean, size = 2, linetype = 2) +
+        annotate("text", x = samp_mean + 0.65, y = 0.57,
+            label = paste("Sample Mean =", round(samp_mean,3))) +
+        stat_function(fun = dnorm, size = 2, linetype = 1,
+            args = list(mean = samp_mean, sd = samp_sd)) +
+        annotate("text", x = samp_mean+1.7, y=.3, label="Distribution of Sample Mean")
+print(g1)
 ```
 
-A sample of this generated data is depicted in the following graph. 
+### Sample Variance versus Theoretical Variance
 
-```{r plot_sample}
+The theoretical variance of the simulations was 25 (the theoretical standard deviation squared). The variance of the simulations were averaged to get the mean of the sample variances, which is `r round(samp_var, 3)`. 
+
+Figure `r fig +1` shows a plot of the sample variances.  The graph suggests a normal distribution.  The _fitdistr_ function was used to estimate the mean and standard deviation of the plot.  A plot of a normal density based on the estimated mean and standard deviation was overlayed.  The theoretical variance is shown as a red vertical line and mean of sample variances is shown as a black vertical line.
+
+```{r variance_plot}
+var_fit <- fitdistr(pop_df$pop_var, "normal")
+
+fig <- fig + 1
+g2 <- ggplot(pop_df, aes(x = pop_var)) +
+    geom_histogram(alpha = .20, binwidth=.5, colour = "black", aes(y = ..density..)) +
+    ggtitle(paste("Figure", fig,
+        "Plot of Variance of the Means of One Thousand Exponential Distributions")) +
+    xlab("Variance of the Means") +
+    ylab("Density") +
+    stat_function(fun = dnorm, size = 2, linetype = 1, size = 2,
+                  args = list(mean = var_fit$estimate[1], sd = var_fit$estimate[2])) +
+    annotate("text", x = 60, y=0.01, label="Variance of Mean Distribution") +
+    geom_vline(stat = "vline", xintercept = theo_var, size = 2, color = "red", linetype = 1) +
+    annotate("text", x = theo_var + 15, y = 0.04, colour="red",
+                label="Theoretical Variance = 25") +
+    geom_vline(stat = "vline", xintercept = samp_var, size = 2, linetype = 2) +
+    annotate("text", x = samp_var + 18, y = 0.06,
+                label = paste("Mean of the Sample Variances =", round(samp_var,3)))
+print(g2)
+```
+
+
+### Distribution
+The following shows a large exponential distribution with a distribution of sample means.
+
+```{r distribution}
 set.seed(4)
 samp <- data.frame(rexp(num_sim, 0.2))
 names(samp) <- "x"
 samp_fit <- fitdistr(samp$x, "exponential")
 samp_rate <- samp_fit$estimate[1]
 
-diff_rate <- round(abs(0.2 - samp_rate), 3)
-
-g1 <- ggplot(samp, aes(x = x)) +
-    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
-    ggtitle("Sample of Expoential Distribution") +
-    stat_function(fun = dexp,
-            args = list(rate = samp_rate),
-            size = 2)
-print(g1)
-```
-
-A best fit estimate of the sample's rate overlays the histogram.  The estimated rate for this sample was `r round(samp_rate, 3)` or `r round(abs(0.2 - samp_rate), 3)` difference from predetermined rate.
-
-The actual means of the data from the simulation were determined and were subsequently plotted.  
-
-```{r plot_simulation_means}
-set.seed(4)
-dat <- data.frame(replicate(num_sim, rexp(num_samp, 0.2)))
-mn_df <- data.frame(colMeans(dat))
-names(mn_df) <- "x"
-
-mn_fit <- fitdistr(mn_df$x, "normal")
-est_mean <- mn_fit$estimate[1]
-est_sd <- mn_fit$estimate[2]
-
-g2 <- ggplot(mn_df, aes(x)) +
-    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
-    geom_vline(stat = "vline", xintercept = theo_mean,
-               size = 2, color = "red", linetype = 1, show_guide = T) +
-    ggtitle("Plot of Means from Simulated Exponential Distribution") +
-    stat_function(fun = dnorm,
-                args = list(mean = est_mean, sd = est_sd),
-                size = 2)
-print(g2)
-
-```
-
-The graph suggested a normal distribution so a best fit estimate was made and this was plotted as an overlay. The estimated mean of this distribution was `r round(est_mean, 3)` or a `r round(abs(5 - est_mean), 3)` difference from the theoretical mean.  The estimated standard distribution of `r round(est_sd, 3)`, or a `r round(abs(0.5 - est_sd), 3)` difference from the theoretical standard deviation.
-
-
-The second simulation looked at the distribution of averages of 40 exponentials sampled from a thousand simulations. The following code was used for this sampled simulation.
-
-```{r}
-
-# CLT formula for Exponential Distribution
-clt_func <- function(x, n) (mean(x) - 0.5 / (5 / sqrt(n)))
-set.seed(40)
-idx <- sample(1:nrow(mn_df), 40)
-clt_dat <- mn_df[idx,]
-clt_df = NULL
-for (i in clt_dat) clt_df <- rbind(clt_df, (clt_func(i,40)))
-
-clt_df <- data.frame(clt_df)
-names(clt_df) <- "x"
-
-
-clt_fit <- fitdistr(clt_df$x, "normal")
-
-g3 <- ggplot(clt_df, aes(x = x)) +
-    geom_histogram(alpha = .20, binwidth=.3, colour = "black", aes(y = ..density..)) +
-    geom_vline(stat = "vline", xintercept = theo_mean,
-               size = 2, color = "red", linetype = 1, show_guide = T) +
-    ggtitle("Plot of 40 Sample Means from Simulated Exponential Distribution") +
-    stat_function(fun = dnorm,
-                  args = list(mean = clt_fit$estimate[1], sd = clt_fit$estimate[2]),
-                  size = 2)
+g3 <- ggplot(NULL) +
+    geom_histogram(data=samp,
+                   alpha = .20,
+                   binwidth=.3,
+                   colour = "black",
+                   aes(x, y = ..density..)) +
+    geom_histogram(data=pop_df,
+                   alpha = .20,
+                   binwidth=.3,
+                   colour = "blue",
+                   aes(pop_mean, y = ..density..)) +
+    ggtitle("Expoential Distribution versus Distribution of Means")
 print(g3)
 ```
 
-### Sample Variance versus Theoretical Variance
-2. Show how variable the sample is (via variance) and compare it to the theoretical variance of the distribution.
-Include figures (output from R) with titles. Highlight the variances you are comparing. Include text that explains your understanding of the differences of the variances.
+## Appendix
 
-### Distribution
-3. Show that the distribution is approximately normal.
-In point 3, focus on the difference between the distribution of a large collection of random exponentials and the distribution of a large collection of averages of 40 exponentials. 
-Via figures and text, explain how one can tell the distribution is approximately normal.
+#### Data Simulations
 
-> Evaluation
+```
+set.seed(4)
+dat <- data.frame(replicate(num_sim, rexp(num_samp, 0.2)))
+pop_df <- data.frame(
+    pop_mean = c(apply(dat, 2, mean)),
+    pop_sd = c(apply(dat, 2, sd)),
+    pop_var = c(apply(dat, 2, var))
+    )
+d_mean <- mean(pop_df$pop_mean)
+d_sd <- sd(pop_df$pop_mean)
+d_var <- var(pop_df$pop_mean)
 
-> 1. Regarding the distribution of the mean of 40 exponentials. Did the student show where the distribution is centered at and compare it  to the theoretical center of the distribution?
+```
+#### Plot of Means from One Thousand Exponential Distributions
 
-> 2. Regarding the distribution of the mean of 40 exponentials. Did the student show how variable it is and compare it to the theoretical variance of the distribution?
+```
+fig <- fig + 1
+g1 <- ggplot(pop_df, aes(x = pop_mean)) +
+        geom_histogram(alpha = .20, binwidth=.05, colour = "black", aes(y = ..density..)) +
+        ggtitle(paste("Figure ", fig,
+                      "Plot of Means from One Thousand Exponential Distributions"))  +
+        geom_vline(stat = "vline", xintercept = theo_mean,
+            size = 2, color = "red", linetype = 1) +
+        annotate("text", x = theo_mean + 0.6, y = 0.6, colour="red",
+            label="Theoretical Mean = 5") +
+        geom_vline(stat = "vline", xintercept = samp_mean, size = 2, linetype = 2) +
+        annotate("text", x = samp_mean + 0.65, y = 0.57,
+            label = paste("Sample Mean =", round(samp_mean,3))) +
+        stat_function(fun = dnorm, size = 2, linetype = 1,
+            args = list(mean = samp_mean, sd = samp_sd)) +
+        annotate("text", x = samp_mean+1.7, y=.3, label="Distribution of Sample Mean")
+print(g1)
+```
 
-> 3. Was the report a pdf report of the required length?
+#### Plot of Variance of the Means of One Thousand Exponential Distributions
+```
+var_fit <- fitdistr(pop_df$pop_var, "normal")
 
-> 4. Here's your opportunity to give this project +1 for effort. Did the student basically try to answer the question?
+fig <- fig + 1
+g2 <- ggplot(pop_df, aes(x = pop_var)) +
+    geom_histogram(alpha = .20, binwidth=.5, colour = "black", aes(y = ..density..)) +
+    ggtitle(paste("Figure", fig,
+        "Plot of Variance of the Means of One Thousand Exponential Distributions")) +
+    stat_function(fun = dnorm, size = 2, linetype = 1, size = 2,
+                  args = list(mean = var_fit$estimate[1], sd = var_fit$estimate[2])) +
+    annotate("text", x = 60, y=0.01, label="Variance of Mean Distribution") +
+    geom_vline(stat = "vline", xintercept = theo_var, size = 2, color = "red", linetype = 1) +
+    annotate("text", x = theo_var + 15, y = 0.04, colour="red",
+                label="Theoretical Variance = 25") +
+    geom_vline(stat = "vline", xintercept = samp_var, size = 2, linetype = 2) +
+    annotate("text", x = samp_var + 18, y = 0.06,
+                label = paste("Mean of the Sample Variances =", round(samp_var,3)))
+print(g2)
+```
+#### Plot Comparing Expoential Distribution versus Distribution of Means
+```
+set.seed(4)
+samp <- data.frame(rexp(num_sim, 0.2))
+names(samp) <- "x"
+samp_fit <- fitdistr(samp$x, "exponential")
+samp_rate <- samp_fit$estimate[1]
+
+g3 <- ggplot(NULL) +
+    geom_histogram(data=samp,
+                   alpha = .20,
+                   binwidth=.3,
+                   colour = "black",
+                   aes(x, y = ..density..)) +
+    geom_histogram(data=pop_df,
+                   alpha = .20,
+                   binwidth=.3,
+                   colour = "blue",
+                   aes(pop_mean, y = ..density..)) +
+    ggtitle("Expoential Distribution versus Distribution of Means")
+print(g3)
+```
+
+
 
 
 
